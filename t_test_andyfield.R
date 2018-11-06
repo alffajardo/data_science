@@ -1,7 +1,7 @@
 #### learning to do t test with R. Andy Field data
 library(tidyverse)
-library(pander)
-spiderwide <- read.csv("SpiderWide.csv",sep = "\t") %>%
+library(WRS2)
+spiderWide <- read.csv("SpiderWide.csv",sep = "\t") %>%
 mutate(pMean = (picture +real)/2 ) %>%
 mutate(grandMean = mean(c(picture,real))) %>%
 mutate(adj = grandMean - pMean)%>%
@@ -9,7 +9,7 @@ mutate (picture_adj = picture + adj)%>%
 mutate(real_adj  = real+adj) %>%
   select(picture_adj,real_adj)
 
-attach(spiderwide)
+attach(spiderWide)
 
 spiderlong <- read.csv("spiderlong.csv",sep="\t")
 
@@ -33,3 +33,5 @@ ttestfromMeans<-function(x1, x2, sd1, sd2, n1, n2)
   sig<-2*(1-(pt(abs(t),df)))
   paste("t(df = ", df, ") = ", t, ", p = ", sig, sep = "")
 }
+
+# Exploring T test through robust methods
