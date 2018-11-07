@@ -34,4 +34,7 @@ ttestfromMeans<-function(x1, x2, sd1, sd2, n1, n2)
   paste("t(df = ", df, ") = ", t, ", p = ", sig, sep = "")
 }
 
-# Exploring T test through robust methods
+# Exploring T test through robust methods (bootstapping)
+detach(spiderWide)
+spiderWide <- read.csv("SpiderWide.csv",sep = "\t") 
+yuen(spiderWide$real, spiderWide$picture)
