@@ -1,0 +1,80 @@
+---
+title: "Ancova Field"
+output: html_notebook
+---
+## Lets load a bunch of packages
+```{r}
+library(multcomp)
+library(compute.es)
+library(effects)
+library(ggplot2)
+library(pastecs)
+library(WRS2)
+library(psych)
+library(pander)
+library(car)
+
+```
+## Import the data
+
+```{r}
+viagraData <- read.csv("ViagraCovariate.csv",sep="\t")
+viagraData$dose <- factor(viagraData$dose,
+                          labels = c("Placebo","Low Dose","Hight Dose"))
+
+head(viagraData)
+tail(viagraData)
+```
+## Some illustrative plots
+```{r}
+ggplot(viagraData,aes(dose,libido))+
+geom_boxplot()
+ggplot(viagraData,aes(dose,partnerLibido))+
+  geom_boxplot()
+```
+## Some Descriptive statistics
+
+```{r}
+by(viagraData$libido, viagraData$dose, stat.desc)
+by(viagraData$partnerLibido, viagraData$dose, stat.desc)
+```
+## Compute Levene Test
+```{r}
+leveneTest(viagraData$libido, viagraData$dose, center = median)
+```
+
+# **Are the predictor variable and covariate independent?**
+n this case, the proposed
+covariate is partner's libido, and we need to check that this variable was roughly equal
+across levels of our independent variable. In other words, is the mean level of partner's libido roughly equal across our three Viagra groups? We can test this by running an ANOVA
+with partnerLibido as the outcome and dose as the predictor.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
