@@ -1,154 +1,86 @@
 ---
-title: "Ancova Field"
-output:
-  word_document: default
-  pdf_document: default
-  html_notebook: default
+title: "Ancova"
+output: html_notebook
 ---
-## Lets load a bunch of packages
+
 ```{r}
-library(multcomp)
-library(compute.es)
-library(effects)
 library(ggplot2)
 library(pastecs)
-library(WRS2)
-library(psych)
-library(pander)
 library(car)
-
+library(effects)
 ```
-## Import the data
 
+## Read de Data
 ```{r}
-viagraData <- read.csv("ViagraCovariate.csv",sep="\t")
-viagraData$dose <- factor(viagraData$dose,
-                          labels = c("Placebo","Low Dose","Hight Dose"))
-
-head(viagraData)
-tail(viagraData)
+viagraData<- as.data.frame(read.delim("ViagraCovariate.dat", header = TRUE))
+viagraData$dose <- as.factor(viagraData$dose)
+levels(viagraData$dose) <- c("Placebo","Low Dose","High Dose")
+attach(viagraData)
 ```
-## Some illustrative plots
+## Exploramos los datos
+un par de gráficas
 ```{r}
 ggplot(viagraData,aes(dose,libido))+
-geom_boxplot()
+  geom_boxplot()
 ggplot(viagraData,aes(dose,partnerLibido))+
   geom_boxplot()
 ```
-## Some Descriptive statistics
-
+Estedísticos descriptivos
 ```{r}
 by(viagraData$libido, viagraData$dose, stat.desc)
 by(viagraData$partnerLibido, viagraData$dose, stat.desc)
 ```
-## Compute Levene Test
+después probamos la homogeneidad de las varianzas
 ```{r}
 leveneTest(viagraData$libido, viagraData$dose, center = median)
 ```
 
-# **Are the predictor variable and covariate independent?**
-In this case, the proposed
-covariate is partner's libido, and we need to check that this variable was roughly equal
-across levels of our independent variable. In other words, is the mean level of partner's libido roughly equal across our three Viagra groups? We can test this by running an ANOVA
-with partnerLibido as the outcome and dose as the predictor.
+```{r}
+viagraModel<-aov(libido ~ dose, data = viagraData)
+summary(viagraModel)
 
-*Conduct an ANOVA to test whether partner's libido
-(our covariate) is independent of the dose of Viagra
-(our independent variable)*
-```{r}
-lm_partner <- lm(partnerLibido~dose,data=viagraData)
-lm_partner
-aov_partner <- aov(lm_partner)
-anova(aov_partner)
+viagraModel<-aov(libido ~ partnerLibido + dose, data = viagraData)
+summary(viagraModel)
 ```
-Since there was no significance in the anova we can fit the ANCOVA model as follows
-```{r}
-viagraModel<-aov(libido ~ dose + partnerLibido, data = viagraData)
-Anova(viagraModel,type="III")
-```
-Note that we have simply added '+ partnerLibido' to the list of predictors. In essence, this
-is all there is to it. We could simply execute this command, sit back, crack open a cool drink
-and admire our handiwork. However, just as we were starting to enjoy a wave of smugness
-at having conducted an ANCOVA, the sinister shadow of humility would slap us on the face and point out that we need to think about the order of our predictors. If we usethe aov() function alone then we'll get different results if we specify our model as 'libido ~
-dose + partnerLibido' than if we specify 'libido ~ partnerLibido + dose' (note the order of
-predictors). This is curious and is something to which we need to give some thought
+## Colocar los contrastes dentro del modelo
 
 ```{r}
 contrasts(viagraData$dose)<-cbind(c(-2,1,1), c(0,-1,1))
+```
+realizar el anova. es importante considerar el tipo de modelo que se emplea
+```{r}
 viagraModel<-aov(libido ~ partnerLibido + dose, data = viagraData)
 Anova(viagraModel, type="III")
 ```
-Now if we want to explore group effects first we need to do adjustment of the means with de effects function 
+## Interpretar el anvova
+No podemos interpretar la diferencia de las medias porque no están ajustadas para la covariable, de esta forma lo que debemos hacer es es ajustar las medias antes de compararalas. es por esto que usamos la función effects
+
 ```{r}
 adjustedMeans<-effect("dose", viagraModel, se=TRUE)
 summary(adjustedMeans)
-adjustedMeans$se
+adjustedMeans$response
 ```
-The overall ANCOVA does not tell us which means differ, so to break down the overall
-effect of dose we need to look at the contrasts that we specified before we created the
-ANCOVA model. To see these contrasts we can use the summary.lm() function on the
-ANCOVA model (viagraModel):
+Ahora que hemos ajustado las medias podemos sabel en donde se encuentran las diferencias. usando la función summary.lm()
+
 ```{r}
 summary.lm(viagraModel)
 ```
-It is also possible to obtain post hoc tests as we did for ANOVA (see section 10.6.8).
-However, because we want to test differences between the adjusted means, we can use only
-the glht() function; the pairwise.t.test() function will not test the adjusted means. As such,
-we are limited to using Tukey or Dunnett's post hoc tests. Remember from Chapter 10 that
-to use this function we enter our model (in this case the ANCOVA model) into it and then
-use the summary() and confint() functions to see the post hoc tests in the console. For the
-viagraModel, we could therefore execute:
+Hemos visto que ajustar una covariable en nuestro modelo reduce el error standar y por lo tanto se aumenta el poder estadístico de nuestro análisis. No obstante, aún debemos poner a prueba los supuestos para poder realizar el ancova.
+
+
+Para probar la homogeneidad de las pendientes volveremos a correr el análisis,pero esta vez considerando la interacción de la variable y covariable 
 
 ```{r}
-postHocs<-glht(viagraModel, linfct = mcp(dose = "Tukey"))
-summary(postHocs)
-confint(postHocs)
-```
-## plots for the ANCOVA model
-```{r}
-par(mfrow=c(2,2))
-plot(viagraModel)
-```
-## Test the asumptions of ANCOVA
-To test the assumption of homogeneity of regression slopes we need to run the ANCOVA
-again, but include the interaction between the covariate and predictor variable. We can do this
-in three ways. The first is to re-specify the whole model from scratch. We can include interaction
-terms by linking variable names with a colon. For example, the interaction of partnerLibido
-and dose would be written in R as partnerLibido:dose (or indeed dose:partnerLibido, it doesn't
-matter). Therefore, to include this interaction in an ANCOVA model we could execute:
-```{r}
-hoRS<-aov(libido ~ partnerLibido + dose + dose:partnerLibido, data =
+hoRS<-aov(libido ~ partnerLibido * dose , data =
 viagraData)
-hoRS
 ```
-
+Corremos nuevamente el análsis
 ```{r}
-hoRS<-aov(libido ~ partnerLibido*dose, data = viagraData)
-hoRS
-
-```
-```{r}
-hoRS<-update(viagraModel, .~. + partnerLibido:dose)
 Anova(hoRS, type="III")
 ```
+```{r}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```
 
 
 

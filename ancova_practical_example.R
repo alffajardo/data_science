@@ -1,2 +1,4 @@
 ## Un ejemplo práctico de ancova
-Data <- read.csv("crickets.csv")
+library(dplyr)
+Data <- read.csv("crickets.csv")%>%
+         select(2:4)
