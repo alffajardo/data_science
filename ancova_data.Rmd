@@ -60,7 +60,7 @@ adjustedMeans<-effect("dose", viagraModel, se=TRUE)
 summary(adjustedMeans)
 adjustedMeans$response
 ```
-Ahora que hemos ajustado las medias podemos sabel en donde se encuentran las diferencias. usando la función summary.lm()
+Ahora que hemos ajustado las medias podemos saber en donde se encuentran las diferencias. usando la función summary.lm()
 
 ```{r}
 summary.lm(viagraModel)
